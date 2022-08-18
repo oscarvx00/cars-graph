@@ -14,6 +14,11 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import json
 from http_request_randomizer.requests.proxy.requestProxy import RequestProxy
+import csv
+from os.path import exists
+
+MAX_ADS_PAGE = int(35/4) + 1
+NUM_PAGES = 2
 
 
 def get_provinces(filepath):
@@ -24,23 +29,36 @@ def get_provinces(filepath):
             mData.append(item['fields']['provincia'])
     return mData
 
+csv_headers = [
+    "year",
+    "kms",
+    "city",
+    "seats",
+    "power",
+    "transmission",
+    "fuel",
+    "doors",
+    "seats",
+    "consumption",
+    "acceleration",
+    "max_speed",
+    "price",
+    "url"
+]
+
 class Car:
     year = None
     kms = None
     city = None
     seats = None
     power = None
-    color = None
+    transmission = None
     fuel = None
     doors = None
     seats = None
-    label = None
     consumption = None
-    contamination = None
-    max_speed = None
     acceleration = None
-    weight = None
-    tank_capacity = None
+    max_speed = None
     price = None
     url = None
 
@@ -54,14 +72,30 @@ class Car:
                 self.kms = int(item.split(' ')[0].replace('.', ''))
             elif item.endswith('cv'):
                 self.power = int(item.split(' ')[0])
-            elif item.endswith('gr/km'):
-                self.contamination = int(item.split(' ')[0])
             elif not item.endswith('cc') and item >= '1990' and item <= '2023':
                 self.year = int(item)
             elif item in ['Diesel', 'Gasolina']:
                 self.fuel = item
             elif item in provinces_array:
                 self.city = item
+            elif item.startswith('Cambio'):
+                self.transmission = item.split(' ')[1]
+        
+        self.price = classified_data.get('price', None)
+        self.consumption = classified_data.get('consumption', None)
+        self.acceleration = classified_data.get('acceleration', None)
+        self.max_speed = classified_data.get('max_speed', None)
+        self.url = classified_data.get('url', None)
+
+    def to_csv(self):
+        buff = []
+        d = self.__dict__
+        for key in csv_headers:
+            data = d.get(key, '-')
+            #if data == None:
+            #    data = '-'
+            buff.append(data)
+        return buff
 
 
 #req_proxy = RequestProxy()
@@ -79,7 +113,7 @@ options = Options()
 #options.add_argument('--disable-dev-shm-usage')
 opt = uc.ChromeOptions()
 opt.add_argument('--disable-popup-blocking')
-#opt.add_argument(f'--proxy-server={proxies[0].get_address()}')
+#opt.add_argument(f'--proxy-server=165.154.253.125:80')
 driver = uc.Chrome(options=opt)
 driver.maximize_window()
 
@@ -133,6 +167,25 @@ def get_classified_data():
     except:
         pass
 
+    try:
+        el = driver.find_element(By.XPATH, "//p[contains(text(), 'Aceleración')]/../p[2]")
+        mData = float(el.get_attribute('textContent').split(' ')[0])
+        data['acceleration'] = mData
+    except:
+        pass
+    
+    try:
+        el = driver.find_element(By.XPATH, "//p[contains(text(), 'Velocidad')]/../p[2]")
+        mData = float(el.get_attribute('textContent').split(' ')[0])
+        data['max_speed'] = mData
+    except:
+        pass
+
+    data['url'] = driver.current_url
+
+    return data
+
+
 def select_car(element):
     link = element.get_attribute('href')
     driver.execute_script(f'window.open("{link}","_blank");')
@@ -144,18 +197,59 @@ def select_car(element):
     driver.close()
     driver.switch_to.window(driver.window_handles[0])
     time.sleep(2)
-    return Car(raw_data, None)
+    return Car(raw_data, classified_data)
+
+def get_ad_height():
+    element = driver.find_element(By.CSS_SELECTOR, 'div.mt-App > main > div.mt-AdsList-inner > section > div.mt-ListAds > div:nth-child(1)')
+    return element.size['height']
+
+def get_car_items(item_height):
+    elements_set = set()
+
+    for x in range(MAX_ADS_PAGE):
+        try:
+            elements = driver.find_elements(By.CSS_SELECTOR, 'div > div.sui-AtomCard.sui-AtomCard--responsive > div.sui-AtomCard-info > a')
+            for el in elements:
+                elements_set.add(el)
+                driver.execute_script(f'window.scrollBy(0, {item_height+20});')
+        except:
+            pass
+
+    return list(elements_set)
 
 
-cars = []
-main_window = driver.current_window_handle
-cars_items = driver.find_elements(By.CSS_SELECTOR, 'div > div.sui-AtomCard.sui-AtomCard--responsive > div.sui-AtomCard-info > a')
+def save_to_csv(headers, data, filepath):
+    if not exists(filepath):
+        with open(filepath, 'w', encoding='UTF8', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(headers)
+            writer.writerows(data)
+    else:
+        with open(filepath, 'a+', encoding='UTF8', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerows(data)
 
-for car_item in cars_items:
-    car = select_car(car_item)
-    cars.append(car)
+    
+
+try:
+    for y in range(NUM_PAGES):     
+        cars = []
+        main_window = driver.current_window_handle 
+        #cars_items = driver.find_elements(By.CSS_SELECTOR, 'div > div.sui-AtomCard.sui-AtomCard--responsive > div.sui-AtomCard-info > a')
+        cars_items = get_car_items(get_ad_height())
+        for car_item in cars_items:
+            car = select_car(car_item)
+            cars.append(car)
+        driver.find_element(By.XPATH, "//li[a/span/span[text()='Siguiente']]").click()
+except:
+    pass
 
 
+cars_csv = []
+for c in cars:
+    cars_csv.append(c.to_csv())
+    
+save_to_csv(csv_headers, cars_csv, 'data.csv')
 
 
 driver.close()
