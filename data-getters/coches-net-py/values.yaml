@@ -1,3 +1,5 @@
 filters:
-  PowerHpFrom: 100
-  MinPrice: 1000
+  PowerHpFrom: 160
+  MinPrice: 2000
+  MaxPrice: 12000
+  ArrBodyType: '1%7C2'

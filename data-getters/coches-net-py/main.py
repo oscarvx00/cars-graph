@@ -30,6 +30,7 @@ def get_provinces(filepath):
     return mData
 
 csv_headers = [
+    "brand",
     "year",
     "kms",
     "city",
@@ -47,6 +48,7 @@ csv_headers = [
 ]
 
 class Car:
+    brand = None
     year = None
     kms = None
     city = None
@@ -68,7 +70,7 @@ class Car:
                 self.doors = int(item.split(' ')[0])
             elif item.endswith('Plazas'):
                 self.seats = int(item.split(' ')[0])
-            elif item.endswith('km'):
+            elif item.endswith('km') and not item.endswith('/km'):
                 self.kms = int(item.split(' ')[0].replace('.', ''))
             elif item.endswith('cv'):
                 self.power = int(item.split(' ')[0])
@@ -81,6 +83,7 @@ class Car:
             elif item.startswith('Cambio'):
                 self.transmission = item.split(' ')[1]
         
+        self.brand = classified_data.get('brand', None)
         self.price = classified_data.get('price', None)
         self.consumption = classified_data.get('consumption', None)
         self.acceleration = classified_data.get('acceleration', None)
@@ -147,6 +150,14 @@ def get_car_raw_data():
 
 def get_classified_data():
     data = {}
+
+    try:
+        el = driver.find_element(By.XPATH, "//h1[contains(@class, 'mt-TitleBasic-title')]")
+        mData = el.get_attribute('textContent')
+        data['brand'] = mData.split(' ')[0]
+    except:
+        pass
+
     try:
         el = driver.find_element(By.XPATH, "//div[@class='mt-CardAdPrice-cash']/div/div/h3")
         mData = el.get_attribute('textContent')
@@ -186,8 +197,8 @@ def get_classified_data():
     return data
 
 
-def select_car(element):
-    link = element.get_attribute('href')
+def select_car(link):
+    
     driver.execute_script(f'window.open("{link}","_blank");')
     time.sleep(2)
     driver.switch_to.window(driver.window_handles[1])
@@ -203,19 +214,20 @@ def get_ad_height():
     element = driver.find_element(By.CSS_SELECTOR, 'div.mt-App > main > div.mt-AdsList-inner > section > div.mt-ListAds > div:nth-child(1)')
     return element.size['height']
 
-def get_car_items(item_height):
-    elements_set = set()
+def get_car_links(item_height):
+    links_set = set()
 
     for x in range(MAX_ADS_PAGE):
         try:
             elements = driver.find_elements(By.CSS_SELECTOR, 'div > div.sui-AtomCard.sui-AtomCard--responsive > div.sui-AtomCard-info > a')
             for el in elements:
-                elements_set.add(el)
+                link = el.get_attribute('href')
+                links_set.add(link)
                 driver.execute_script(f'window.scrollBy(0, {item_height+20});')
         except:
             pass
 
-    return list(elements_set)
+    return list(links_set)
 
 
 def save_to_csv(headers, data, filepath):
@@ -232,15 +244,18 @@ def save_to_csv(headers, data, filepath):
     
 
 try:
+    cars_links = []
     for y in range(NUM_PAGES):     
         cars = []
         main_window = driver.current_window_handle 
-        #cars_items = driver.find_elements(By.CSS_SELECTOR, 'div > div.sui-AtomCard.sui-AtomCard--responsive > div.sui-AtomCard-info > a')
-        cars_items = get_car_items(get_ad_height())
-        for car_item in cars_items:
-            car = select_car(car_item)
-            cars.append(car)
+        #cars_links = driver.find_elements(By.CSS_SELECTOR, 'div > div.sui-AtomCard.sui-AtomCard--responsive > div.sui-AtomCard-info > a')
+        cars_links = cars_links + get_car_links(get_ad_height())
         driver.find_element(By.XPATH, "//li[a/span/span[text()='Siguiente']]").click()
+        
+    for car_link in cars_links:
+            car = select_car(car_link)
+            cars.append(car)
+        
 except:
     pass
 
