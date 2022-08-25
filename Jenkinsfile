@@ -1,14 +1,7 @@
 pipeline  {
-    agent {
-        docker {
-            image 'alpine'
-        }
-    }
     stages {
-        stage('Build'){
-            steps {
-                sh 'echo hola from repo mod'
-            }
+        stage('Train ia'){
+            sh 'No agent test'
         }
     }
 }
