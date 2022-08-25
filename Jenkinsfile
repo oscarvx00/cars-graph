@@ -7,8 +7,7 @@ pipeline  {
     stages {
         stage('Build'){
             steps {
-                sh 'echo hola'
+                sh 'echo hola from repo'
             }
         }
     }
-}
