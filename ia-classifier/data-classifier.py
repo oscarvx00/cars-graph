@@ -301,6 +301,9 @@ of data, not single samples)
 2. Call `convert_to_tensor` on each feature
 """
 
+#Save model
+model.save('model')
+
 sample = {
     "brand" : "MERDECES-BENZ",
     "year" : 2002,
