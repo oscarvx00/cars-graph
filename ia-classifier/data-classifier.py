@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from tensorflow import keras
 
-model = tf.keras.models.load_model('./saved_model.pb')
+model = tf.keras.models.load_model('model')
 
 
 sample = {
@@ -25,5 +25,3 @@ predictions = model.predict(input_dict)
 
 pred = np.argmax(predictions)
 print("Coche cat " + str(pred))
-
-
