@@ -8,7 +8,7 @@ pipeline  {
             steps {
                 dir('ia-classifier'){
                     sh 'python3 data-classifier.py'
-                    sh "cp model/* ./model/"
+                    sh "cp -r model/* ./model/"
                 }
             }
         }
