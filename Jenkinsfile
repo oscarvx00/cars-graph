@@ -25,7 +25,7 @@ pipeline  {
                 dir('ia-classifier'){
                     unstash 'model'
                     sh 'unzip -o model.zip'
-                    sh 'zip -r ./* ia-classifier.zip'
+                    sh 'zip -r ia-classifier.zip ./* '
                 }
             }
             post {
