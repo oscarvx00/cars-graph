@@ -21,16 +21,19 @@ pipeline  {
         }
         stage('Generate ia workspace'){
             agent any
-            dir('ia-classifier'){
-                unstash 'model'
-                sh 'unzip model.zip'
-                sh 'zip -r ./* ia-classifier.zip'
+            steps {
+                dir('ia-classifier'){
+                    unstash 'model'
+                    sh 'unzip model.zip'
+                    sh 'zip -r ./* ia-classifier.zip'
+                }
+            }
+            post {
+                    success {
+                        archiveArtifacts 'ia-classifier/ia-classifier.zip'
+                    }
+                }
             }
         }
-        post {
-            success {
-                archiveArtifacts 'ia-classifier/ia-classifier.zip'
-            }
-        }
-    }
+        
 }
