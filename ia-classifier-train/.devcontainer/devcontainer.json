@@ -1,0 +1,19 @@
+{
+    "name": "cars-graph-ia-dev",
+    "build": {
+        "dockerfile": "Dockerfile"
+    },
+    "runArgs": [
+        "--gpus",
+        "all",
+        "--volume",
+        "/home/oscar/Escritorio/cars-graph/ia-training/imgs:/tmp/figs"
+	],
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-python.python"
+			]
+		}
+	}
+}
