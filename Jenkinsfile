@@ -8,7 +8,11 @@ pipeline  {
             steps {
                 dir('ia-classifier'){
                     sh 'python3 data-classifier.py'
-                    sh "cp -r model/* ./model/"
+                }
+            }
+            post {
+                success {
+                    archiveArtifacts 'ia-classifier/model/*'
                 }
             }
         }
