@@ -9,7 +9,7 @@ pipeline  {
                 dir('ia-classifier-train'){
                     sh 'python3 data-classifier.py'
                     sh "zip -r model.zip model/*"
-                    stash inclides: 'model.zip', name: 'model'
+                    stash includes: 'model.zip', name: 'model'
                 }
             }
             /*
@@ -29,11 +29,10 @@ pipeline  {
                 }
             }
             post {
-                    success {
-                        archiveArtifacts 'ia-classifier/ia-classifier.zip'
-                    }
+                success {
+                    archiveArtifacts 'ia-classifier/ia-classifier.zip'
                 }
             }
         }
-        
+    }     
 }
