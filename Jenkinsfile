@@ -13,15 +13,15 @@ pipeline  {
                 }
             }
         }
-        stage('Generate ia workspace'){
+        stage('Generate product'){
             agent any
             steps {
                 dir('ia-classifier'){
                     unstash 'model'
                     sh 'unzip -o model.zip'
                     sh 'rm model.zip'
-                    sh 'zip -r ia-classifier.zip ./* '
                 }
+                sh 'zip -r cars-graph.zip ia-classifier data-getters run.sh'
             }
             post {
                 success {

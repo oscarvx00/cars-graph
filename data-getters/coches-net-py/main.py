@@ -2,24 +2,23 @@ from multiprocessing.spawn import import_main_path
 import time
 from tokenize import Number
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
-from selenium.webdriver.common.action_chains import ActionChains
-from selenium.webdriver.common.keys import Keys
-from webdriver_manager.chrome import ChromeDriverManager
 import undetected_chromedriver as uc
 import yaml
 from yaml.loader import SafeLoader
-from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import json
-from http_request_randomizer.requests.proxy.requestProxy import RequestProxy
 import csv
 from os.path import exists
+import argparse
 
 MAX_ADS_PAGE = int(35/4) + 1
-NUM_PAGES = 2
 
+parser = argparse.ArgumentParser(description='Coches.net data scrapper')
+parser.add_argument('--pages', type=int, required=True, help='pages to explore')
+parser.add_argument('--output', type=str, required=True, help='output csv filepath')
+
+args = parser.parse_args()
 
 def get_provinces(filepath):
     mData = []
@@ -94,15 +93,12 @@ class Car:
         buff = []
         d = self.__dict__
         for key in csv_headers:
-            data = d.get(key, '-')
+            data = d.get(key, '')
             #if data == None:
             #    data = '-'
             buff.append(data)
         return buff
 
-
-#req_proxy = RequestProxy()
-#proxies = req_proxy.get_proxy_list()
 
 with open('values.yaml') as f:
     values = yaml.load(f, Loader=SafeLoader)
@@ -111,12 +107,8 @@ with open('values.yaml') as f:
 provinces_array = get_provinces('provincias-espanolas.json')
  
 options = Options()
-# options.add_argument('--headless')
-# options.add_argument('--no-sandbox')
-#options.add_argument('--disable-dev-shm-usage')
 opt = uc.ChromeOptions()
 opt.add_argument('--disable-popup-blocking')
-#opt.add_argument(f'--proxy-server=165.154.253.125:80')
 driver = uc.Chrome(options=opt)
 driver.maximize_window()
 
@@ -245,16 +237,20 @@ def save_to_csv(headers, data, filepath):
 
 try:
     cars_links = []
-    for y in range(NUM_PAGES):     
+    for y in range(args.pages):     
         cars = []
         main_window = driver.current_window_handle 
         #cars_links = driver.find_elements(By.CSS_SELECTOR, 'div > div.sui-AtomCard.sui-AtomCard--responsive > div.sui-AtomCard-info > a')
         cars_links = cars_links + get_car_links(get_ad_height())
         driver.find_element(By.XPATH, "//li[a/span/span[text()='Siguiente']]").click()
         
+    print("Detected %d cars"%len(cars_links))
+    index = 0
     for car_link in cars_links:
             car = select_car(car_link)
             cars.append(car)
+            index = index + 1
+            print("--> %d of %d"%(index, len(cars_links)))
         
 except:
     pass
@@ -264,7 +260,7 @@ cars_csv = []
 for c in cars:
     cars_csv.append(c.to_csv())
     
-save_to_csv(csv_headers, cars_csv, 'data.csv')
+save_to_csv(csv_headers, cars_csv, args.output)
 
 
 driver.close()
