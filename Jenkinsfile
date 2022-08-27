@@ -25,7 +25,7 @@ pipeline  {
             }
             post {
                 success {
-                    archiveArtifacts 'ia-classifier/ia-classifier.zip'
+                    archiveArtifacts 'cars-graph.zip'
                 }
             }
         }
